@@ -452,3 +452,4 @@ def performScan(context,
         print("Output: %s s" % (time.time() - startTime))
 
     print("Done.")
+    return slicedScannedValues

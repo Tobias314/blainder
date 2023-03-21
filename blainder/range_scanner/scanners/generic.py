@@ -275,20 +275,20 @@ def startScan(context, dependencies_installed, properties, objectName):
         else:
             depthList = []
 
-        sonar.performScan(context, 
-                    properties.scannerType, properties.scannerObject,
-                    properties.maxDistance,
-                    properties.fovSonar, properties.sonarStepDegree, properties.sonarMode3D, properties.sonarKeepRotation,
-                    properties.sourceLevel, properties.noiseLevel, properties.directivityIndex, properties.processingGain, properties.receptionThreshold,   
-                    properties.simulateWaterProfile, depthList,   
-                    properties.addNoise, properties.noiseType, properties.mu, properties.sigma, properties.addConstantNoise, properties.noiseAbsoluteOffset, properties.noiseRelativeOffset,
-                    properties.addMesh,
-                    properties.exportLAS and dependencies_installed, properties.exportHDF and dependencies_installed, properties.exportCSV, properties.exportSingleFrames,
-                    properties.dataFilePath, cleanedFileName,
-                    properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
-                    properties.enableAnimation, properties.frameStart, properties.frameEnd, properties.frameStep,
-                    targets, materialMappings,
-                    categoryIDs, partIDs)
+        results = sonar.performScan(context, 
+                                    properties.scannerType, properties.scannerObject,
+                                    properties.maxDistance,
+                                    properties.fovSonar, properties.sonarStepDegree, properties.sonarMode3D, properties.sonarKeepRotation,
+                                    properties.sourceLevel, properties.noiseLevel, properties.directivityIndex, properties.processingGain, properties.receptionThreshold,   
+                                    properties.simulateWaterProfile, depthList,   
+                                    properties.addNoise, properties.noiseType, properties.mu, properties.sigma, properties.addConstantNoise, properties.noiseAbsoluteOffset, properties.noiseRelativeOffset,
+                                    properties.addMesh,
+                                    properties.exportLAS and dependencies_installed, properties.exportHDF and dependencies_installed, properties.exportCSV, properties.exportSingleFrames,
+                                    properties.dataFilePath, cleanedFileName,
+                                    properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
+                                    properties.enableAnimation, properties.frameStart, properties.frameEnd, properties.frameStep,
+                                    targets, materialMappings,
+                                    categoryIDs, partIDs)
 
     else:
         if properties.enableAnimation:
@@ -358,6 +358,7 @@ def startScan(context, dependencies_installed, properties, objectName):
 
         trees = {}
 
+        results = []
         for frameNumber in frameRange:
             print("Rendering frame %d..." % frameNumber)
 
@@ -381,23 +382,22 @@ def startScan(context, dependencies_installed, properties, objectName):
                 # be updated before calculating the point data!
                 bpy.context.scene.frame_set(frameNumber)
 
-            numberOfHits = lidar.performScan(context, 
-                                properties.scannerType, properties.scannerObject,
-                                properties.reflectivityLower, properties.distanceLower, properties.reflectivityUpper, properties.distanceUpper, properties.maxReflectionDepth,
-                                intervalStart, intervalEnd, properties.fovX, stepsX, properties.fovY, stepsY, properties.resolutionPercentage,
-                                scannedValues, startIndex,
-                                firstFrame, lastFrame, frameNumber, properties.rotationsPerSecond,
-                                properties.addNoise, properties.noiseType, properties.mu, properties.sigma, properties.addConstantNoise, properties.noiseAbsoluteOffset, properties.noiseRelativeOffset,
-                                properties.simulateRain, properties.rainfallRate,
-                                properties.simulateDust, properties.particleRadius, properties.particlesPcm, properties.dustCloudLength, properties.dustCloudStart,
-                                properties.addMesh and properties.exportSingleFrames,
-                                properties.exportLAS and dependencies_installed and properties.exportSingleFrames, properties.exportHDF and dependencies_installed and properties.exportSingleFrames, properties.exportCSV and properties.exportSingleFrames, 
-                                properties.exportRenderedImage, properties.exportSegmentedImage, properties.exportPascalVoc and dependencies_installed, properties.exportDepthmap, properties.depthMinDistance, properties.depthMaxDistance, 
-                                properties.dataFilePath, cleanedFileName,
-                                properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
-                                targets, materialMappings,
-                                categoryIDs, partIDs, trees, depsgraph)
-
+            numberOfHits= lidar.performScan(context, 
+                                            properties.scannerType, properties.scannerObject,
+                                            properties.reflectivityLower, properties.distanceLower, properties.reflectivityUpper, properties.distanceUpper, properties.maxReflectionDepth,
+                                            intervalStart, intervalEnd, properties.fovX, stepsX, properties.fovY, stepsY, properties.resolutionPercentage,
+                                            scannedValues, startIndex,
+                                            firstFrame, lastFrame, frameNumber, properties.rotationsPerSecond,
+                                            properties.addNoise, properties.noiseType, properties.mu, properties.sigma, properties.addConstantNoise, properties.noiseAbsoluteOffset, properties.noiseRelativeOffset,
+                                            properties.simulateRain, properties.rainfallRate,
+                                            properties.simulateDust, properties.particleRadius, properties.particlesPcm, properties.dustCloudLength, properties.dustCloudStart,
+                                            properties.addMesh and properties.exportSingleFrames,
+                                            properties.exportLAS and dependencies_installed and properties.exportSingleFrames, properties.exportHDF and dependencies_installed and properties.exportSingleFrames, properties.exportCSV and properties.exportSingleFrames, 
+                                            properties.exportRenderedImage, properties.exportSegmentedImage, properties.exportPascalVoc and dependencies_installed, properties.exportDepthmap, properties.depthMinDistance, properties.depthMaxDistance, 
+                                            properties.dataFilePath, cleanedFileName,
+                                            properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
+                                            targets, materialMappings,
+                                            categoryIDs, partIDs, trees, depsgraph)
             startIndex += numberOfHits
 
         if not properties.exportSingleFrames:
@@ -414,6 +414,7 @@ def startScan(context, dependencies_installed, properties, objectName):
 
             exportNoiseData = properties.addNoise or properties.simulateRain
 
+            results.append(slicedScannedValues)
             if len(slicedScannedValues) > 0:
                 # setup exporter with our data
                 if (properties.exportLAS and dependencies_installed) or (properties.exportHDF and dependencies_installed) or (properties.exportCSV and dependencies_installed):
@@ -434,6 +435,7 @@ def startScan(context, dependencies_installed, properties, objectName):
                 print("No data to export!")
     if properties.measureTime:
         print("Scan time: %s s" % (time.time() - startTime))
+    return results
 
 def getBVHTrees(trees, targets, depsgraph):
     for target in targets:

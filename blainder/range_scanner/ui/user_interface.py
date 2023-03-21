@@ -1276,12 +1276,13 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
                 properties.swapObject.scale[1] = oldScale[1] * scaleY
                 properties.swapObject.scale[2] = oldScale[2] * scaleZ
 
-            generic.startScan(context, dependencies_installed, properties, "%s_mod_%d" % (objectName, i))
+            res = generic.startScan(context, dependencies_installed, properties, "%s_mod_%d" % (objectName, i))
 
         # reset the matrix so that the next run can start from zero
         properties.swapObject.matrix_world = matrixWorld
     else:
-        generic.startScan(context, dependencies_installed, properties, objectName)
+        res = generic.startScan(context, dependencies_installed, properties, objectName)
+    return res
 
 def performScan(context, dependencies_installed, properties):
     if properties.joinMeshes:
@@ -1336,6 +1337,7 @@ def performScan(context, dependencies_installed, properties):
                     
                     print("Found file: ", fullPath)
                     
+        results = []
         for (currentFile, fileName) in filePaths:
             print("Loading model %s" % currentFile)
 
@@ -1382,9 +1384,11 @@ def performScan(context, dependencies_installed, properties):
             # delete the imported object as we copied it and don't need it anymore
             bpy.ops.object.delete({"selected_objects": [importedObject]})
 
-            modifyAndScan(context, dependencies_installed, properties, fileName)
+            results.append(modifyAndScan(context, dependencies_installed, properties, fileName))
     else:
-        modifyAndScan(context, dependencies_installed, properties, None)
+        results = modifyAndScan(context, dependencies_installed, properties, None)
+    return results
+    
 
 def scan_rotating(context, 
         scannerObject,
@@ -1405,6 +1409,7 @@ def scan_rotating(context,
         dataFilePath, dataFileName,
         
         debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
+        output_result: bool = False
 ):
 
     scene = context.scene
@@ -1458,7 +1463,9 @@ def scan_rotating(context,
     properties.destinationObject = destinationObject
     properties.targetObject = targetObject
 
-    performScan(context, dependencies_installed, properties)
+    properties.output_result = output_result
+
+    return performScan(context, dependencies_installed, properties)
 
 def scan_sonar(context, 
         scannerObject,
@@ -2339,8 +2346,11 @@ def register():
     global dependencies_installed
     dependencies_installed = False
 
-    for cls in classes:
-        bpy.utils.register_class(cls)
+    try:
+        for cls in classes:
+            bpy.utils.register_class(cls)
+    except ValueError:
+        return
 
     bpy.types.Scene.scannerProperties = PointerProperty(type=ScannerProperties)
     bpy.types.Scene.custom = CollectionProperty(type=CUSTOM_objectCollection)
