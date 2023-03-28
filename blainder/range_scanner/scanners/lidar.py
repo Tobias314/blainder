@@ -621,7 +621,8 @@ def performScan(context,
                 fileExporter.exportLAS()
 
             if exportHDF:
-                fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame))
+                #fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_single" % (firstFrame, lastFrame))
+                fileExporter.exportHDF()
 
             if exportCSV:
                 fileExporter.exportCSV()

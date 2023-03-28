@@ -83,7 +83,8 @@ def performScan(context,
                 debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
                 enableAnimation, frameStart, frameEnd, frameStep,
                 targets, materialMappings,
-                categoryIDs, partIDs):
+                categoryIDs, partIDs,
+                return_result:bool=False):
 
     if measureTime:
         startTime = time.time()
@@ -452,4 +453,5 @@ def performScan(context,
         print("Output: %s s" % (time.time() - startTime))
 
     print("Done.")
-    return slicedScannedValues
+    if return_result:
+        return slicedScannedValues

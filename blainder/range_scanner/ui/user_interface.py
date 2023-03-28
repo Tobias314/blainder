@@ -1245,6 +1245,7 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
         oldRotation = matrixWorldDecomposed[1].to_euler()
         oldScale = matrixWorldDecomposed[2]
 
+        result = []
         # repeat the given number of times
         for i in range(properties.numberOfModifications):
             # generate random values for translation, rotation and scaling
@@ -1277,12 +1278,15 @@ def modifyAndScan(context, dependencies_installed, properties, objectName):
                 properties.swapObject.scale[2] = oldScale[2] * scaleZ
 
             res = generic.startScan(context, dependencies_installed, properties, "%s_mod_%d" % (objectName, i))
+            if properties.return_result:
+                result.append(res)
 
         # reset the matrix so that the next run can start from zero
         properties.swapObject.matrix_world = matrixWorld
     else:
-        res = generic.startScan(context, dependencies_installed, properties, objectName)
-    return res
+        result = generic.startScan(context, dependencies_installed, properties, objectName)
+    if properties.return_result:
+        return result
 
 def performScan(context, dependencies_installed, properties):
     if properties.joinMeshes:
@@ -1384,10 +1388,13 @@ def performScan(context, dependencies_installed, properties):
             # delete the imported object as we copied it and don't need it anymore
             bpy.ops.object.delete({"selected_objects": [importedObject]})
 
-            results.append(modifyAndScan(context, dependencies_installed, properties, fileName))
+            res = modifyAndScan(context, dependencies_installed, properties, fileName)
+            if properties.return_result:
+                results.append(res)
     else:
         results = modifyAndScan(context, dependencies_installed, properties, None)
-    return results
+    if properties.return_result:
+        return results
     
 
 def scan_rotating(context, 
@@ -1409,7 +1416,7 @@ def scan_rotating(context,
         dataFilePath, dataFileName,
         
         debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
-        output_result: bool = False
+        return_result: bool = False
 ):
 
     scene = context.scene
@@ -1463,7 +1470,7 @@ def scan_rotating(context,
     properties.destinationObject = destinationObject
     properties.targetObject = targetObject
 
-    properties.output_result = output_result
+    properties.return_result = return_result
 
     return performScan(context, dependencies_installed, properties)
 
@@ -2344,13 +2351,13 @@ def register():
     global config 
 
     global dependencies_installed
-    dependencies_installed = False
+    #dependencies_installed = False
 
     try:
         for cls in classes:
             bpy.utils.register_class(cls)
     except ValueError:
-        return
+        pass
 
     bpy.types.Scene.scannerProperties = PointerProperty(type=ScannerProperties)
     bpy.types.Scene.custom = CollectionProperty(type=CUSTOM_objectCollection)
@@ -2358,60 +2365,62 @@ def register():
 
     missingDependency = None
 
-    try:
-        requirementsPath = os.path.join(pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt")
-        print("Reading dependencies from {0}".format(requirementsPath))
-        requirementsFile = open(requirementsPath, 'r')
-        requirements = requirementsFile.readlines()
-
-        importName = None
-
-        # Strips the newline character
-        for requirement in requirements:
-            stripped = requirement.strip()
-
-            if stripped.startswith("#/"):
-                importName = stripped.split("#/")[1]
-                continue
-
-            if stripped.startswith("#") or not stripped:
-                continue
-
-            name, version = stripped.split("==")
-
-            if importName is None:
-                importName = name
-
-            print(f"Checking {name}: version {version}, import {importName}")
-
-            missingDependency = name
-            import_module(module_name=importName)
+    if not dependencies_installed:
+        try:
+            requirementsPath = os.path.join(pathlib.Path(__file__).parent.parent.absolute(), "requirements.txt")
+            print("Reading dependencies from {0}".format(requirementsPath))
+            requirementsFile = open(requirementsPath, 'r')
+            requirements = requirementsFile.readlines()
 
             importName = None
 
-        dependencies_installed = True
-        missingDependency = None
+            # Strips the newline character
+            for requirement in requirements:
+                stripped = requirement.strip()
 
-        print("All dependencies found.")
-    except ModuleNotFoundError:
-        print("ERROR: Missing dependency %s." % str(missingDependency))
-        # Don't register other panels, operators etc.
-        return
+                if stripped.startswith("#/"):
+                    importName = stripped.split("#/")[1]
+                    continue
 
-    # load scanner config file
-    configPath = os.path.join(pathlib.Path(__file__).parent.absolute(), "presets.yaml")
+                if stripped.startswith("#") or not stripped:
+                    continue
 
-    print("Loading config file from %s ..." % configPath)
+                name, version = stripped.split("==")
 
-    with open(configPath, 'r') as stream:
-        try:
-            # we can't load it before checking for our dependencies, as we need the yaml module here
-            import yaml
-            config = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
+                if importName is None:
+                    importName = name
 
-    print("Done.")
+                print(f"Checking {name}: version {version}, import {importName}")
+
+                missingDependency = name
+                import_module(module_name=importName)
+
+                importName = None
+
+            dependencies_installed = True
+            missingDependency = None
+
+            print("All dependencies found.")
+        except ModuleNotFoundError:
+            print("ERROR: Missing dependency %s." % str(missingDependency))
+            # Don't register other panels, operators etc.
+            return
+
+    if not config:
+        # load scanner config file
+        configPath = os.path.join(pathlib.Path(__file__).parent.absolute(), "presets.yaml")
+
+        print("Loading config file from %s ..." % configPath)
+
+        with open(configPath, 'r') as stream:
+            try:
+                # we can't load it before checking for our dependencies, as we need the yaml module here
+                import yaml
+                config = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+
+        print("Done.")
 
 # delete all classes on shutdown
 def unregister():

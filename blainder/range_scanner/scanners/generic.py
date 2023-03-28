@@ -288,7 +288,7 @@ def startScan(context, dependencies_installed, properties, objectName):
                                     properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
                                     properties.enableAnimation, properties.frameStart, properties.frameEnd, properties.frameStep,
                                     targets, materialMappings,
-                                    categoryIDs, partIDs)
+                                    categoryIDs, partIDs, return_results=properties.return_result)
 
     else:
         if properties.enableAnimation:
@@ -398,6 +398,7 @@ def startScan(context, dependencies_installed, properties, objectName):
                                             properties.debugLines, properties.debugOutput, properties.outputProgress, properties.measureTime, properties.singleRay, properties.destinationObject, properties.targetObject,
                                             targets, materialMappings,
                                             categoryIDs, partIDs, trees, depsgraph)
+            results.append(scannedValues[startIndex:startIndex+numberOfHits])
             startIndex += numberOfHits
 
         if not properties.exportSingleFrames:
@@ -414,7 +415,8 @@ def startScan(context, dependencies_installed, properties, objectName):
 
             exportNoiseData = properties.addNoise or properties.simulateRain
 
-            results.append(slicedScannedValues)
+            if properties.return_result:
+                results = slicedScannedValues
             if len(slicedScannedValues) > 0:
                 # setup exporter with our data
                 if (properties.exportLAS and dependencies_installed) or (properties.exportHDF and dependencies_installed) or (properties.exportCSV and dependencies_installed):
@@ -427,7 +429,8 @@ def startScan(context, dependencies_installed, properties, objectName):
                         fileExporter.exportLAS()
 
                     if properties.exportHDF:
-                        fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_merged" % (firstFrame, lastFrame))
+                        fileExporter.exportHDF(fileNameExtra='')
+                        #fileExporter.exportHDF(fileNameExtra="_frames_%d_to_%d_merged" % (firstFrame, lastFrame))
 
                     if properties.exportCSV:
                         fileExporter.exportCSV()
@@ -435,7 +438,8 @@ def startScan(context, dependencies_installed, properties, objectName):
                 print("No data to export!")
     if properties.measureTime:
         print("Scan time: %s s" % (time.time() - startTime))
-    return results
+    if properties.return_result:
+        return results
 
 def getBVHTrees(trees, targets, depsgraph):
     for target in targets:
