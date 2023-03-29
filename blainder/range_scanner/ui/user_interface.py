@@ -14,6 +14,8 @@ bl_info = {
     "wiki_url": "https://git.informatik.tu-freiberg.de/masterarbeit/blender-range-scanner",
 }
 
+from typing import Optional
+
 import bpy
 from bpy import context
 import sys
@@ -1416,7 +1418,7 @@ def scan_rotating(context,
         dataFilePath, dataFileName,
         
         debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
-        return_result: bool = False
+        return_result: bool = False, map_category_by: Optional[str] = None
 ):
 
     scene = context.scene
@@ -1471,6 +1473,7 @@ def scan_rotating(context,
     properties.targetObject = targetObject
 
     properties.return_result = return_result
+    properties.map_category_by = map_category_by
 
     return performScan(context, dependencies_installed, properties)
 

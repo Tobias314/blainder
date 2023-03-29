@@ -273,7 +273,7 @@ def performScan(context,
                 dataFilePath, dataFileName,
                 debugLines, debugOutput, outputProgress, measureTime, singleRay, destinationObject, targetObject,
                 targets, materialMappings,
-                categoryIDs, partIDs, trees, depsgraph):
+                categoryIDs, partIDs, trees, depsgraph, map_category_by = None):
 
     if measureTime:
         startTime = time.time()
@@ -421,7 +421,10 @@ def performScan(context,
                 else:
                     partIDIndex = closestHit.target.material_slots[materialMappings[closestHit.target][1][closestHit.faceIndex]].name
 
-                closestHit.categoryID = categoryIDs[closestHit.target["categoryID"]]
+                if map_category_by is not None:
+                    closestHit.categoryID = int(closestHit.target[map_category_by])
+                else:
+                    closestHit.categoryID = categoryIDs[closestHit.target["categoryID"]]
                 closestHit.partID = partIDs[partIDIndex]
                     
                 if closestHit.wasReflected:
